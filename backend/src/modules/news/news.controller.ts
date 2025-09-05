@@ -9,14 +9,20 @@ export function createNewsRouter(ds: DataSource): Router {
   const repo = ds.getRepository(News);
 
   router.get('/', async (req: Request, res: Response) => {
-    const query = z
+    const parsed = z
       .object({
         page: z.coerce.number().int().min(1).default(1),
         limit: z.coerce.number().int().min(1).max(100).default(20),
         market: z.string().optional(),
         confidence_min: z.coerce.number().int().min(0).max(100).optional(),
       })
-      .parse(req.query);
+      .safeParse(req.query);
+
+    if (!parsed.success) {
+      return res.status(400).json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'Invalid query' } });
+    }
+
+    const query = parsed.data;
 
     const where: any = {};
     if (query.market) where.market = query.market;

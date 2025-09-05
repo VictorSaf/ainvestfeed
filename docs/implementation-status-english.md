@@ -287,3 +287,24 @@ Status Legend: Planned | In Progress | Done | Blocked
 - Seeded news via `POST /__seed/news`.
 - Playwright E2E executed with `BASE_URL=http://localhost:5174`, `API_BASE_URL=http://localhost:3003`.
 - Results: 3/3 tests PASSED (feed mocked, login mocked, real bookmark flow).
+
+#### 11:00 Security/CORS/Cache/Error Validation
+- Security headers (Helmet): `x-frame-options: SAMEORIGIN`, CSP header present.
+- Cache header: `x-cache: MISS` on first `/news` call (cache verified present).
+- Unauthorized access: `GET /user/profile` → 401.
+- Invalid action unauthenticated: `POST /news/not-a-uuid/bookmark` → 401.
+
+#### 11:03 Rate Limit & CORS Behavior
+- Rate limiting: after ~1000 req/min, subsequent `/health` returned `429 Too Many Requests`.
+- CORS: with no `ALLOWED_ORIGINS` configured, requests include `vary: Origin` and echo the `access-control-allow-origin` header with the request origin (per allow-all behavior when unset).
+
+#### 11:06 Additional Robustness Checks
+- Malformed JSON body: `PUT /user/profile` → 400.
+- Invalid JWT: `GET /user/profile` with `Authorization: Bearer bad.token.value` → 401.
+- Cache behavior on `/news?limit=1`: `x-cache` MISS then HIT on subsequent call.
+
+#### 11:12 Bugfix: News invalid pagination
+- Issue: `/news?page=0` returned 500 due to validation exception.
+- Fix: switched to `safeParse` and return 400 with `{ code: 'VALIDATION_ERROR' }` in `news.controller.ts`.
+- Added unit test for `page=0` → 400; all tests green.
+- Deployed and verified in Docker: `/news?page=0` now returns 400.

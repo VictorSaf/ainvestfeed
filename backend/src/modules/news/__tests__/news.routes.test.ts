@@ -59,6 +59,12 @@ describe('News routes', () => {
     expect(r.status).toBe(200);
     expect(r.body.data.id).toBe(id);
   });
+
+  it('returns 400 on invalid pagination (page=0)', async () => {
+    const r = await request(app).get('/news?page=0');
+    expect(r.status).toBe(400);
+    expect(r.body.success).toBe(false);
+  });
 });
 
 
