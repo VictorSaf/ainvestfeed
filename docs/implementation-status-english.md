@@ -308,3 +308,8 @@ Status Legend: Planned | In Progress | Done | Blocked
 - Fix: switched to `safeParse` and return 400 with `{ code: 'VALIDATION_ERROR' }` in `news.controller.ts`.
 - Added unit test for `page=0` → 400; all tests green.
 - Deployed and verified in Docker: `/news?page=0` now returns 400.
+
+#### 11:18 Error Response Shapes
+- Validation error: `/news?page=0` → 400 `{ success:false, error:{ code: 'VALIDATION_ERROR', message } }`.
+- Not found: `/news/00000000-0000-0000-0000-000000000000` → 404 `{ success:false, error:{ code: 'RESOURCE_NOT_FOUND', message } }`.
+- Auth required: `GET /user/profile` (no token) → 401 `{ success:false, error:{ code: 'AUTHENTICATION_REQUIRED', message } }`.
