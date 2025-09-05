@@ -23,6 +23,7 @@ services:
       NODE_ENV: production
       PORT: 3002
       DATABASE_URL: postgres://user:password@postgres:5432/ainvestfeed
+      ALLOWED_ORIGINS: "http://localhost:5174"
     depends_on:
       - postgres
       - redis

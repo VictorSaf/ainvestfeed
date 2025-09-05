@@ -318,3 +318,9 @@ Status Legend: Planned | In Progress | Done | Blocked
 - News market filters: `/news?market=stocks&limit=5` and `/news?market=crypto&limit=5` → 200 with filtered results.
 - `confidence_min` query param accepted (no effect yet) → `/news?confidence_min=80&limit=5` ⇒ 200.
 - Device delete flow: `POST /user/devices` + `GET /user/devices` + `DELETE /user/devices/:id` ⇒ 201/200/200 respectively.
+
+#### 11:30 CORS Locked Down (Compose)
+- Updated `docker-compose.yml` to set `ALLOWED_ORIGINS=http://localhost:5174` for backend.
+- Verified CORS:
+  - Origin `http://localhost:5174` ⇒ `access-control-allow-origin: http://localhost:5174`.
+  - Origin `https://evil.example.com` ⇒ no explicit allow (browser will block preflight/response handling).
