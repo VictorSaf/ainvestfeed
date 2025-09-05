@@ -313,3 +313,8 @@ Status Legend: Planned | In Progress | Done | Blocked
 - Validation error: `/news?page=0` → 400 `{ success:false, error:{ code: 'VALIDATION_ERROR', message } }`.
 - Not found: `/news/00000000-0000-0000-0000-000000000000` → 404 `{ success:false, error:{ code: 'RESOURCE_NOT_FOUND', message } }`.
 - Auth required: `GET /user/profile` (no token) → 401 `{ success:false, error:{ code: 'AUTHENTICATION_REQUIRED', message } }`.
+
+#### 11:24 Remaining Cases
+- News market filters: `/news?market=stocks&limit=5` and `/news?market=crypto&limit=5` → 200 with filtered results.
+- `confidence_min` query param accepted (no effect yet) → `/news?confidence_min=80&limit=5` ⇒ 200.
+- Device delete flow: `POST /user/devices` + `GET /user/devices` + `DELETE /user/devices/:id` ⇒ 201/200/200 respectively.
