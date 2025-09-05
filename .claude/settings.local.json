@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx --yes markdownlint-cli docs/*.md)",
+      "Bash(npx --yes markdownlint-cli docs/audit/*.md)",
+      "Bash(docker-compose:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

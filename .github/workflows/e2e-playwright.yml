@@ -1,0 +1,173 @@
+name: E2E Playwright
+
+on:
+  push:
+    paths:
+      - 'backend/**'
+      - 'frontend/**'
+      - 'e2e/**'
+      - '.github/workflows/e2e-playwright.yml'
+  pull_request:
+    paths:
+      - 'backend/**'
+      - 'frontend/**'
+      - 'e2e/**'
+      - '.github/workflows/e2e-playwright.yml'
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_DB: ainvestfeed
+          POSTGRES_USER: user
+          POSTGRES_PASSWORD: password
+        ports:
+          - 5433:5432
+        options: >-
+          --health-cmd "pg_isready -U user -d ainvestfeed" --health-interval 10s --health-timeout 5s --health-retries 5
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install backend deps, build
+        working-directory: backend
+        run: |
+          npm ci
+          npm run build
+
+      - name: Start backend
+        working-directory: backend
+        env:
+          NODE_ENV: production
+          PORT: 3001
+          DATABASE_URL: postgres://user:password@localhost:5433/ainvestfeed
+        run: |
+          nohup node dist/server.js > api.log 2>&1 & echo $! > api.pid
+          sleep 3
+          curl -sSf http://localhost:3001/health
+
+      - name: Install frontend deps and build
+        working-directory: frontend
+        run: |
+          npm ci
+          npm run build
+
+      - name: Install Playwright Browsers
+        run: npx playwright install --with-deps
+
+      - name: Run E2E tests
+        env:
+          BASE_URL: http://localhost:5173
+          WEB_COMMAND: "npm run preview"
+          API_BASE_URL: http://localhost:3001
+        run: npm run e2e
+
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report/
+
+      - name: Print backend logs on failure
+        if: failure()
+        working-directory: backend
+        run: |
+          echo '--- API LOGS ---'
+          cat api.log || true
+
+name: E2E Playwright
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install backend deps
+        working-directory: backend
+        run: npm ci
+
+      - name: Install frontend deps
+        working-directory: frontend
+        run: npm ci
+
+      - name: Start Postgres + Redis via Compose
+        run: docker compose up -d postgres redis
+
+      - name: Wait for Postgres
+        run: |
+          for i in {1..30}; do
+            nc -z localhost 5433 && echo "Postgres up" && exit 0
+            sleep 1
+          done
+          echo "Postgres did not start in time" && exit 1
+
+      - name: Build backend
+        working-directory: backend
+        run: npm run build --silent
+
+      - name: Start backend
+        working-directory: backend
+        env:
+          NODE_ENV: production
+          PORT: 3001
+          DATABASE_URL: postgres://user:password@localhost:5433/ainvestfeed
+          JWT_ACCESS_SECRET: supersecret_access_token_1234567890123456
+          JWT_REFRESH_SECRET: supersecret_refresh_token_1234567890123456
+          ALLOWED_ORIGINS: http://localhost:5173
+        run: node dist/server.js &
+
+      - name: Wait for backend health
+        run: |
+          for i in {1..60}; do
+            curl -fsS http://localhost:3001/health && exit 0 || true
+            sleep 1
+          done
+          echo "Backend did not become healthy in time" && exit 1
+
+      - name: Build frontend
+        working-directory: frontend
+        run: npm run build --silent
+
+      - name: Install Playwright Browsers
+        uses: microsoft/playwright-github-action@v1
+
+      - name: Run Playwright E2E
+        run: npx playwright test --config e2e/playwright.config.ts
+
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report
+          if-no-files-found: ignore
+
+
