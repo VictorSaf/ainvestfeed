@@ -324,3 +324,8 @@ Status Legend: Planned | In Progress | Done | Blocked
 - Verified CORS:
   - Origin `http://localhost:5174` ⇒ `access-control-allow-origin: http://localhost:5174`.
   - Origin `https://evil.example.com` ⇒ no explicit allow (browser will block preflight/response handling).
+
+#### 11:40 DX Improvements
+- Added environment templates: `backend/ENV_EXAMPLE`, `frontend/ENV_EXAMPLE`.
+- Added CI smoke workflow `.github/workflows/smoke.yml` to curl `/health` after bring-up.
+- Added `README.md` with quick start, dev, tests, and environment notes.
